@@ -1,0 +1,47 @@
+{
+  "expo": {
+    "name": "Aura Studio",
+    "slug": "aura-studio",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "Aura Studio uses the camera so you can take a selfie for your headshot.",
+        "NSPhotoLibraryUsageDescription": "Aura Studio needs photo access to choose a selfie and save your headshot.",
+        "NSPhotoLibraryAddUsageDescription": "Aura Studio saves your finished headshot to your library."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#08080A",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Aura Studio to choose a selfie for your headshot.",
+          "cameraPermission": "Allow Aura Studio to take a selfie for your headshot."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Allow Aura Studio to save your finished headshot.",
+          "savePhotosPermission": "Allow Aura Studio to save your finished headshot.",
+          "isAccessMediaLocationEnabled": false
+        }
+      ],
+      "expo-sharing"
+    ]
+  }
+}

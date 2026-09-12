@@ -1,0 +1,19 @@
+# dependencies
+node_modules/
+
+# env / secrets
+.env
+.env.*
+!.env.example
+
+# build
+dist/
+.expo/
+web-build/
+*.tsbuildinfo
+
+# OS / debug
+.DS_Store
+npm-debug.*
+yarn-debug.*
+yarn-error.*
