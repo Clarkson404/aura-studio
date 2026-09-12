@@ -1,3 +1,4 @@
+import { Platform } from "react-native";
 import * as FileSystem from "expo-file-system/legacy";
 
 export type StylePreset = "corporate" | "editorial" | "dating";
@@ -31,6 +32,17 @@ async function toUploadableImage(imageUri: string): Promise<string> {
     imageUri.startsWith("data:")
   ) {
     return imageUri;
+  }
+
+  if (Platform.OS === "web") {
+    const response = await fetch(imageUri);
+    const blob = await response.blob();
+    return await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error("Could not read the selected image."));
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.readAsDataURL(blob);
+    });
   }
 
   const base64 = await FileSystem.readAsStringAsync(imageUri, {

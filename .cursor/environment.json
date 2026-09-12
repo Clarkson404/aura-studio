@@ -1,0 +1,18 @@
+{
+  "name": "Aura Studio",
+  "install": "cd backend && npm ci && npm run build && cd ../frontend && npm ci",
+  "terminals": [
+    {
+      "name": "backend",
+      "command": "cd backend && npm start"
+    },
+    {
+      "name": "frontend-web",
+      "command": "cd frontend && EXPO_PUBLIC_API_URL=http://localhost:4000 npx expo start --web --port 8081"
+    }
+  ],
+  "ports": [
+    { "name": "backend api", "port": 4000 },
+    { "name": "expo web", "port": 8081 }
+  ]
+}
