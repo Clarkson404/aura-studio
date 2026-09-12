@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Platform,
   Pressable,
   Share as NativeShare,
   StyleSheet,
@@ -10,7 +11,6 @@ import {
   View,
 } from "react-native";
 import * as FileSystem from "expo-file-system/legacy";
-import * as MediaLibrary from "expo-media-library";
 import * as Sharing from "expo-sharing";
 import { SafeAreaView } from "react-native-safe-area-context";
 import type { ResultScreenProps } from "../navigation";
@@ -83,6 +83,14 @@ export default function ResultScreen({ navigation, route }: ResultScreenProps) {
   const onSave = async () => {
     try {
       setSaving(true);
+      if (Platform.OS === "web") {
+        Alert.alert(
+          "Save on mobile",
+          "Saving to your photo library is available in the iOS and Android apps. Use Share to download here."
+        );
+        return;
+      }
+      const MediaLibrary: typeof import("expo-media-library") = require("expo-media-library");
       const permission = await MediaLibrary.requestPermissionsAsync();
       if (!permission.granted) {
         Alert.alert("Permission needed", "Allow photo access to save your headshot.");
