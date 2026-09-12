@@ -3,6 +3,7 @@ services:
     name: aura-studio-backend
     runtime: node
     plan: starter
+    rootDir: backend
     buildCommand: npm install && npm run build
     startCommand: npm start
     envVars:
