@@ -3,18 +3,18 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Platform,
   Pressable,
-  Share as NativeShare,
   StyleSheet,
   Text,
   View,
 } from "react-native";
 import * as FileSystem from "expo-file-system/legacy";
-import * as MediaLibrary from "expo-media-library";
 import * as Sharing from "expo-sharing";
 import { SafeAreaView } from "react-native-safe-area-context";
 import type { ResultScreenProps } from "../navigation";
 import { generateHeadshot } from "../services/api";
+import { saveToPhotoLibrary } from "../utils/saveToPhotoLibrary";
 
 const STAGES = [
   "Reading your likeness…",
@@ -73,45 +73,31 @@ export default function ResultScreen({ navigation, route }: ResultScreenProps) {
       .finally(() => setBusy(false));
   };
 
-  const downloadLocal = async (): Promise<string> => {
-    if (!resultUrl) throw new Error("No result yet.");
-    const dest = `${FileSystem.cacheDirectory}aura-headshot.jpg`;
-    const { uri } = await FileSystem.downloadAsync(resultUrl, dest);
-    return uri;
-  };
-
-  const onSave = async () => {
+  const handleShare = async () => {
+    if (!resultUrl) return;
     try {
       setSaving(true);
-      const permission = await MediaLibrary.requestPermissionsAsync();
-      if (!permission.granted) {
-        Alert.alert("Permission needed", "Allow photo access to save your headshot.");
+
+      if (Platform.OS === "web") {
+        await saveToPhotoLibrary(resultUrl);
+        Alert.alert("Success", "Image downloaded successfully!");
         return;
       }
-      const localUri = await downloadLocal();
-      await MediaLibrary.saveToLibraryAsync(localUri);
-      Alert.alert("Saved", "Your headshot is in your photo library.");
-    } catch (err) {
-      Alert.alert("Couldn't save", err instanceof Error ? err.message : "Try again.");
-    } finally {
-      setSaving(false);
-    }
-  };
 
-  const onShare = async () => {
-    try {
-      setSaving(true);
-      const localUri = await downloadLocal();
+      const filename = `headshot-${Date.now()}.png`;
+      const directory = FileSystem.documentDirectory ?? FileSystem.cacheDirectory;
+      if (!directory) throw new Error("Could not save photo");
+      const localUri = `${directory}${filename}`;
+      const { uri } = await FileSystem.downloadAsync(resultUrl, localUri);
+
       if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(localUri, {
-          mimeType: "image/jpeg",
-          dialogTitle: "Share your Aura Studio headshot",
-        });
-        return;
+        await Sharing.shareAsync(uri);
+      } else {
+        Alert.alert("Success", "Image downloaded successfully!");
       }
-      await NativeShare.share({ url: localUri, message: "My Aura Studio headshot" });
-    } catch (err) {
-      Alert.alert("Couldn't share", err instanceof Error ? err.message : "Try again.");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Could not save photo";
+      Alert.alert("Error", message);
     } finally {
       setSaving(false);
     }
@@ -145,10 +131,10 @@ export default function ResultScreen({ navigation, route }: ResultScreenProps) {
 
       {resultUrl ? (
         <View style={styles.actions}>
-          <Pressable style={styles.primary} onPress={onSave} disabled={saving}>
+          <Pressable style={styles.primary} onPress={handleShare} disabled={saving}>
             <Text style={styles.primaryText}>{saving ? "Working…" : "Save"}</Text>
           </Pressable>
-          <Pressable style={styles.secondary} onPress={onShare} disabled={saving}>
+          <Pressable style={styles.secondary} onPress={handleShare} disabled={saving}>
             <Text style={styles.secondaryText}>Share</Text>
           </Pressable>
         </View>
