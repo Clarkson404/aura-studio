@@ -20,9 +20,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import type { PaywallScreenProps } from "../navigation";
 
 const ENTITLEMENT_ID = process.env.EXPO_PUBLIC_RC_ENTITLEMENT ?? "premium";
-const IOS_KEY = process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY ?? "";
-const ANDROID_KEY = process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY ?? "";
-const GENERIC_KEY = process.env.EXPO_PUBLIC_REVENUECAT_API_KEY ?? "";
+const REVENUECAT_API_KEY =
+  Platform.select({
+    ios: "appl_YOUR_APPLE_KEY_HERE",
+    android: "goog_ItKwHkxmRkIovcBNJSCFUyJHbbU",
+  }) || "";
 
 const BENEFITS = [
   "3-day free trial — cancel anytime",
@@ -33,12 +35,6 @@ const BENEFITS = [
 ];
 
 let purchasesConfigured = false;
-
-function apiKeyForPlatform(): string {
-  if (Platform.OS === "ios") return IOS_KEY || GENERIC_KEY;
-  if (Platform.OS === "android") return ANDROID_KEY || GENERIC_KEY;
-  return GENERIC_KEY;
-}
 
 function hasActiveEntitlement(info: CustomerInfo): boolean {
   return Boolean(info.entitlements.active[ENTITLEMENT_ID]);
@@ -67,6 +63,10 @@ export default function PaywallScreen({ navigation, route }: PaywallScreenProps)
     navigation.replace("Result", { imageUri, stylePreset });
   }, [imageUri, navigation, stylePreset]);
 
+  const handleDevBypass = () => {
+    navigation.replace("Result", { imageUri, stylePreset });
+  };
+
   useEffect(() => {
     let cancelled = false;
 
@@ -77,9 +77,9 @@ export default function PaywallScreen({ navigation, route }: PaywallScreenProps)
         return;
       }
 
-      const apiKey = apiKeyForPlatform();
+      const apiKey = REVENUECAT_API_KEY;
       if (!apiKey) {
-        setError("test_srkPAJCWlPAgYFrzdQzJhCuXkBA.");
+        setError("Add your RevenueCat API key to continue.");
         setLoading(false);
         return;
       }
@@ -213,8 +213,13 @@ export default function PaywallScreen({ navigation, route }: PaywallScreenProps)
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
         {__DEV__ ? (
-          <Pressable onPress={goToResult} style={styles.devSkip}>
-            <Text style={styles.devSkipText}>Continue without purchase (dev)</Text>
+          <Pressable
+            onPress={handleDevBypass}
+            style={{ marginTop: 20, padding: 12, alignItems: "center" }}
+          >
+            <Text style={{ color: "#6366F1", fontWeight: "600" }}>
+              [DEV] Skip Paywall & Generate Photo
+            </Text>
           </Pressable>
         ) : null}
 
@@ -271,7 +276,5 @@ const styles = StyleSheet.create({
   restore: { marginTop: 16, alignItems: "center" },
   restoreText: { color: "#C8B89A", fontWeight: "600" },
   error: { color: "#E8A0A0", textAlign: "center", marginTop: 16, lineHeight: 20 },
-  devSkip: { marginTop: 20, alignItems: "center" },
-  devSkipText: { color: "#6E6A64", fontSize: 13 },
   legal: { color: "#6E6A64", fontSize: 11, lineHeight: 16, marginTop: 24, textAlign: "center" },
 });

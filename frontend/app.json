@@ -33,14 +33,6 @@
           "cameraPermission": "Allow Aura Studio to take a selfie for your headshot."
         }
       ],
-      [
-        "expo-media-library",
-        {
-          "photosPermission": "Allow Aura Studio to save your finished headshot.",
-          "savePhotosPermission": "Allow Aura Studio to save your finished headshot.",
-          "isAccessMediaLocationEnabled": false
-        }
-      ],
       "expo-sharing"
     ]
   }

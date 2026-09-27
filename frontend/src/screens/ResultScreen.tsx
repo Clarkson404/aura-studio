@@ -1,94 +1,48 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
   View,
+  Text,
+  Image,
+  StyleSheet,
+  ActivityIndicator,
+  TouchableOpacity,
+  Alert,
 } from "react-native";
-import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
-import { SafeAreaView } from "react-native-safe-area-context";
+import * as FileSystem from "expo-file-system/legacy";
 import type { ResultScreenProps } from "../navigation";
 import { generateHeadshot } from "../services/api";
-import { saveToPhotoLibrary } from "../utils/saveToPhotoLibrary";
 
-const STAGES = [
-  "Reading your likeness…",
-  "Lighting the studio…",
-  "Rendering your look…",
-  "Upscaling to high-res…",
-];
-
-export default function ResultScreen({ navigation, route }: ResultScreenProps) {
+export default function ResultScreen({ route, navigation }: ResultScreenProps) {
   const { imageUri, stylePreset } = route.params;
-  const [stageIndex, setStageIndex] = useState(0);
-  const [resultUrl, setResultUrl] = useState<string | null>(null);
-  const [busy, setBusy] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const started = useRef(false);
+  const [loading, setLoading] = useState(true);
+  const [outputImage, setOutputImage] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!busy || resultUrl) return;
-    const timer = setInterval(() => {
-      setStageIndex((current) => (current + 1) % STAGES.length);
-    }, 2800);
-    return () => clearInterval(timer);
-  }, [busy, resultUrl]);
-
-  useEffect(() => {
-    if (started.current) return;
-    started.current = true;
-
-    const run = async () => {
-      setBusy(true);
-      setError(null);
-      try {
-        const result = await generateHeadshot(imageUri, stylePreset);
-        setResultUrl(result.url);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Generation failed.");
-      } finally {
-        setBusy(false);
+    const runGeneration = async () => {
+      setLoading(true);
+      const response = await generateHeadshot(imageUri, stylePreset);
+      if (response.success && response.resultUrl) {
+        setOutputImage(response.resultUrl);
+      } else {
+        Alert.alert("Processing Error", response.error || "Failed to render image", [
+          { text: "Try Again", onPress: () => navigation.goBack() },
+        ]);
       }
+      setLoading(false);
     };
 
-    void run();
-  }, [imageUri, stylePreset]);
-
-  const retry = () => {
-    started.current = false;
-    setResultUrl(null);
-    setError(null);
-    setBusy(true);
-    setStageIndex(0);
-    started.current = true;
-    void generateHeadshot(imageUri, stylePreset)
-      .then((result) => setResultUrl(result.url))
-      .catch((err) => setError(err instanceof Error ? err.message : "Generation failed."))
-      .finally(() => setBusy(false));
-  };
+    void runGeneration();
+  }, [imageUri, navigation, stylePreset]);
 
   const handleShare = async () => {
-    if (!resultUrl) return;
+    if (!outputImage) return;
     try {
-      setSaving(true);
-
-      if (Platform.OS === "web") {
-        await saveToPhotoLibrary(resultUrl);
-        Alert.alert("Success", "Image downloaded successfully!");
-        return;
-      }
-
       const filename = `headshot-${Date.now()}.png`;
       const directory = FileSystem.documentDirectory ?? FileSystem.cacheDirectory;
       if (!directory) throw new Error("Could not save photo");
       const localUri = `${directory}${filename}`;
-      const { uri } = await FileSystem.downloadAsync(resultUrl, localUri);
+      const { uri } = await FileSystem.downloadAsync(outputImage, localUri);
 
       if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(uri);
@@ -98,130 +52,78 @@ export default function ResultScreen({ navigation, route }: ResultScreenProps) {
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Could not save photo";
       Alert.alert("Error", message);
-    } finally {
-      setSaving(false);
     }
   };
 
-  return (
-    <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
-      <View style={styles.header}>
-        <Pressable onPress={() => navigation.popToTop()} hitSlop={12}>
-          <Text style={styles.back}>Home</Text>
-        </Pressable>
-        <Text style={styles.headerTitle}>
-          {stylePreset.charAt(0).toUpperCase() + stylePreset.slice(1)}
+  if (loading) {
+    return (
+      <View style={styles.centerContainer}>
+        <ActivityIndicator size="large" color="#6366F1" />
+        <Text style={styles.loadingTitle}>Enhancing & Styling Face...</Text>
+        <Text style={styles.loadingSubtitle}>
+          Applying 8K studio lighting and photo parameters
         </Text>
-        <View style={{ width: 48 }} />
       </View>
+    );
+  }
 
-      <View style={styles.frame}>
-        {resultUrl ? (
-          <Image source={{ uri: resultUrl }} style={styles.image} resizeMode="cover" />
-        ) : (
-          <View style={styles.processing}>
-            <ActivityIndicator size="large" color="#D4AF77" />
-            <Text style={styles.stage}>{error ? "Something went wrong" : STAGES[stageIndex]}</Text>
-            <Text style={styles.stageHint}>
-              {error ?? "This usually takes about a minute. Keep the app open."}
-            </Text>
-          </View>
+  return (
+    <View style={styles.container}>
+      <Text style={styles.header}>Your Studio Photo</Text>
+      <View style={styles.imageFrame}>
+        {outputImage && (
+          <Image source={{ uri: outputImage }} style={styles.resultImage} resizeMode="cover" />
         )}
       </View>
-
-      {resultUrl ? (
-        <View style={styles.actions}>
-          <Pressable style={styles.primary} onPress={handleShare} disabled={saving}>
-            <Text style={styles.primaryText}>{saving ? "Working…" : "Save"}</Text>
-          </Pressable>
-          <Pressable style={styles.secondary} onPress={handleShare} disabled={saving}>
-            <Text style={styles.secondaryText}>Share</Text>
-          </Pressable>
-        </View>
-      ) : (
-        <View style={styles.actions}>
-          {error ? (
-            <Pressable style={styles.primary} onPress={retry}>
-              <Text style={styles.primaryText}>Try again</Text>
-            </Pressable>
-          ) : (
-            <View style={styles.waitingBar}>
-              <Text style={styles.waitingText}>Generating high-res portrait</Text>
-            </View>
-          )}
-        </View>
-      )}
-    </SafeAreaView>
+      <View style={styles.buttonRow}>
+        <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.navigate("Home")}>
+          <Text style={styles.secondaryBtnText}>Create Another</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.primaryButton} onPress={handleShare}>
+          <Text style={styles.primaryBtnText}>Save / Share</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#08080A" },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-  },
-  back: { color: "#D4AF77", fontSize: 16, width: 48 },
-  headerTitle: { color: "#F5F1EA", fontSize: 16, fontWeight: "700" },
-  frame: {
+  container: { flex: 1, backgroundColor: "#09090B", padding: 24, justifyContent: "center" },
+  centerContainer: {
     flex: 1,
-    marginHorizontal: 20,
-    marginTop: 8,
-    borderRadius: 22,
-    overflow: "hidden",
-    backgroundColor: "#121214",
-    borderWidth: 1,
-    borderColor: "#2A2722",
-  },
-  image: { width: "100%", height: "100%" },
-  processing: {
-    flex: 1,
-    alignItems: "center",
+    backgroundColor: "#09090B",
     justifyContent: "center",
-    padding: 28,
+    alignItems: "center",
+    padding: 24,
   },
-  stage: {
-    color: "#F5F1EA",
-    fontSize: 18,
-    fontWeight: "700",
-    marginTop: 20,
-    textAlign: "center",
+  loadingTitle: { color: "#FFF", fontSize: 20, fontWeight: "700", marginTop: 24 },
+  loadingSubtitle: { color: "#A1A1AA", fontSize: 14, marginTop: 8, textAlign: "center" },
+  header: { fontSize: 28, fontWeight: "800", color: "#FFF", textAlign: "center", marginBottom: 24 },
+  imageFrame: {
+    width: "100%",
+    height: 420,
+    borderRadius: 24,
+    overflow: "hidden",
+    backgroundColor: "#18181B",
   },
-  stageHint: {
-    color: "#9A948A",
-    marginTop: 10,
-    textAlign: "center",
-    lineHeight: 20,
-  },
-  actions: {
-    flexDirection: "row",
-    gap: 12,
-    padding: 20,
-  },
-  primary: {
+  resultImage: { width: "100%", height: "100%" },
+  buttonRow: { flexDirection: "row", marginTop: 24, justifyContent: "space-between" },
+  primaryButton: {
     flex: 1,
-    backgroundColor: "#D4AF77",
+    backgroundColor: "#6366F1",
+    paddingVertical: 16,
     borderRadius: 16,
-    paddingVertical: 16,
     alignItems: "center",
+    marginLeft: 8,
   },
-  primaryText: { color: "#14110C", fontWeight: "800", fontSize: 16 },
-  secondary: {
+  secondaryButton: {
     flex: 1,
-    borderColor: "#D4AF77",
-    borderWidth: 1,
+    backgroundColor: "#27272A",
+    paddingVertical: 16,
     borderRadius: 16,
-    paddingVertical: 16,
     alignItems: "center",
+    marginRight: 8,
   },
-  secondaryText: { color: "#D4AF77", fontWeight: "800", fontSize: 16 },
-  waitingBar: {
-    flex: 1,
-    alignItems: "center",
-    paddingVertical: 16,
-  },
-  waitingText: { color: "#9A948A" },
+  primaryBtnText: { color: "#FFF", fontWeight: "700", fontSize: 16 },
+  secondaryBtnText: { color: "#E4E4E7", fontWeight: "600", fontSize: 16 },
 });
