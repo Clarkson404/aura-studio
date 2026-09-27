@@ -5,6 +5,7 @@ node_modules/
 .env
 .env.*
 !.env.example
+FAL_KEY.txt
 
 # build
 dist/
