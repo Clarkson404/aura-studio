@@ -1,5 +1,9 @@
 import "react-native-gesture-handler";
+import { LogBox } from "react-native";
 import { NavigationContainer, DefaultTheme } from "@react-navigation/native";
+
+// Ignore HMR / Expo CLI websocket connection warnings in tunnel mode
+LogBox.ignoreLogs(["Cannot connect to Expo CLI"]);
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";

@@ -3,8 +3,6 @@
     "name": "Aura Studio",
     "slug": "aura-studio",
     "version": "1.0.0",
-    "android": {
-      "package": "com.aurastudio.app"
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -17,6 +15,7 @@
       }
     },
     "android": {
+      "package": "com.aurastudio.app",
       "adaptiveIcon": {
         "backgroundColor": "#08080A",
         "foregroundImage": "./assets/android-icon-foreground.png",

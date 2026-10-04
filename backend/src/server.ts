@@ -19,8 +19,10 @@ fal.config({
 });
 
 const app = express();
+
+// Enable CORS for mobile app requests
 app.use(cors());
-app.use(express.json({ limit: "15mb" }));
+app.use(express.json({ limit: "50mb" }));
 
 type GenerateBody = {
   imageUri?: string;
@@ -61,6 +63,8 @@ app.post(
   "/api/generate-headshot-v2",
   async (req: Request, res: Response): Promise<void> => {
     try {
+      console.log("Received generation request:", req.body?.stylePreset);
+
       if (!process.env.FAL_KEY || process.env.FAL_KEY === "YOUR_FAL_KEY_HERE") {
         res.status(500).json({ error: "FAL_KEY is not configured." });
         return;
@@ -120,6 +124,7 @@ app.post(
       }
 
       res.json({
+        resultUrl,
         url: resultUrl,
         stylePreset,
       });
