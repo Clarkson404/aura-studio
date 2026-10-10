@@ -13,9 +13,10 @@ fal.config({
 
 const app = express();
 
-// Enable CORS for mobile app requests
+// Increase JSON body limit for Base64 images
 app.use(cors());
 app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
 type GenerateBody = {
   imageUri?: string;
@@ -33,9 +34,7 @@ app.post(
       const { imageUri, stylePreset } = req.body as GenerateBody;
 
       if (!imageUri || !imageUri.startsWith("data:image")) {
-        res.status(400).json({
-          error: "Invalid image payload. Must be a valid base64 data URI.",
-        });
+        res.status(400).json({ error: "Valid base64 data URI is required" });
         return;
       }
 
@@ -44,7 +43,7 @@ app.post(
         return;
       }
 
-      console.log(`Processing ${stylePreset} headshot via fal.ai...`);
+      console.log(`Received request for style: ${stylePreset}`);
 
       const result = (await fal.subscribe("fal-ai/flux-pulid", {
         input: {
@@ -56,19 +55,20 @@ app.post(
 
       const resultUrl = result.images?.[0]?.url;
       if (!resultUrl) {
-        res.status(422).json({ error: "fal.ai processing failed" });
+        res.status(500).json({ error: "Generation failed" });
         return;
       }
 
+      console.log("fal.ai generation successful!");
       res.json({ success: true, resultUrl });
     } catch (error: unknown) {
-      console.error("FAL AI Error:", error);
-      const message = error instanceof Error ? error.message : "fal.ai processing failed";
-      res.status(422).json({ error: message });
+      console.error("FAL AI Processing Error:", error);
+      const message = error instanceof Error ? error.message : "Generation failed";
+      res.status(500).json({ error: message });
     }
   }
 );
 
 app.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });

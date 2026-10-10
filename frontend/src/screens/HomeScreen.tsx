@@ -41,8 +41,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     const options = {
       mediaTypes: ["images"] as ImagePicker.MediaType[],
       allowsEditing: true,
-      aspect: [3, 4] as [number, number],
-      quality: 0.8,
+      aspect: [1, 1] as [number, number],
+      quality: 0.5,
       base64: true,
     };
     const result = fromCamera
@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     borderWidth: 1,
     borderColor: "#2A2722",
-    aspectRatio: 3 / 4,
+    aspectRatio: 1,
     backgroundColor: "#121214",
   },
   preview: { width: "100%", height: "100%" },
