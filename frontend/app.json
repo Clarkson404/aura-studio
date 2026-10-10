@@ -15,6 +15,7 @@
       }
     },
     "android": {
+      "package": "com.aurastudio.app",
       "adaptiveIcon": {
         "backgroundColor": "#08080A",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -31,14 +32,6 @@
         {
           "photosPermission": "Allow Aura Studio to choose a selfie for your headshot.",
           "cameraPermission": "Allow Aura Studio to take a selfie for your headshot."
-        }
-      ],
-      [
-        "expo-media-library",
-        {
-          "photosPermission": "Allow Aura Studio to save your finished headshot.",
-          "savePhotosPermission": "Allow Aura Studio to save your finished headshot.",
-          "isAccessMediaLocationEnabled": false
         }
       ],
       "expo-sharing"

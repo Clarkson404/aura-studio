@@ -38,21 +38,25 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
       return;
     }
 
+    const options = {
+      mediaTypes: ["images"] as ImagePicker.MediaType[],
+      allowsEditing: true,
+      aspect: [1, 1] as [number, number],
+      quality: 0.5,
+      base64: true,
+    };
     const result = fromCamera
-      ? await ImagePicker.launchCameraAsync({
-          allowsEditing: true,
-          aspect: [3, 4],
-          quality: 0.9,
-        })
-      : await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ["images"],
-          allowsEditing: true,
-          aspect: [3, 4],
-          quality: 0.9,
-        });
+      ? await ImagePicker.launchCameraAsync(options)
+      : await ImagePicker.launchImageLibraryAsync(options);
 
-    if (!result.canceled && result.assets[0]?.uri) {
-      setImageUri(result.assets[0].uri);
+    if (!result.canceled && result.assets[0]) {
+      const asset = result.assets[0];
+      if (!asset.base64) {
+        Alert.alert("Could not read photo", "Try another image.");
+        return;
+      }
+      const mimeType = asset.mimeType || "image/jpeg";
+      setImageUri(`data:${mimeType};base64,${asset.base64}`);
     }
   };
 
@@ -152,7 +156,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     borderWidth: 1,
     borderColor: "#2A2722",
-    aspectRatio: 3 / 4,
+    aspectRatio: 1,
     backgroundColor: "#121214",
   },
   preview: { width: "100%", height: "100%" },
